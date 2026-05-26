@@ -16,7 +16,11 @@ import crypto from 'crypto';
 ───────────────────────────────────────────── */
 try {
   const __dir = dirname(fileURLToPath(import.meta.url));
-  const envStr = readFileSync(resolve(__dir, '../.env'), 'utf8');
+
+  const envStr = readFileSync(
+    resolve(__dir, '../.env'),
+    'utf8'
+  );
 
   for (const line of envStr.split('\n')) {
     const trimmed = line.trim();
@@ -28,6 +32,7 @@ try {
     if (eqIdx < 0) continue;
 
     const key = trimmed.slice(0, eqIdx).trim();
+
     const val = trimmed.slice(eqIdx + 1).trim();
 
     if (key && !(key in process.env)) {
@@ -35,7 +40,7 @@ try {
     }
   }
 } catch {
-  console.log('[INFO] Using system environment variables');
+  console.log('[INFO] Using Render environment variables');
 }
 
 /* ─────────────────────────────────────────────
@@ -68,10 +73,12 @@ app.use(
       'http://localhost:4173',
       'http://localhost:3000',
 
-      // Replace with your Vercel frontend URL
+      // Your Vercel frontend
       'https://port-folio-nine-bice.vercel.app',
     ],
+
     methods: ['GET', 'POST'],
+
     credentials: true,
   })
 );
@@ -88,16 +95,20 @@ const OTP_TTL_MS = 5 * 60 * 1000;
 ───────────────────────────────────────────── */
 function createTransporter() {
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+
+    port: 465,
+
+    secure: true,
 
     auth: {
       user: MAIL_USER,
       pass: MAIL_PASS,
     },
 
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 30000,
   });
 }
 
@@ -154,13 +165,19 @@ app.post('/api/send-otp', async (req, res) => {
   console.log(`[OTP] Sending OTP to ${email}`);
 
   try {
-   console.log("Creating transporter...");
+    console.log('Creating transporter...');
+
     const transporter = createTransporter();
+
+    console.log('Sending OTP email...');
 
     await transporter.sendMail({
       from: `"Mounish Portfolio" <${MAIL_USER}>`,
+
       to: email,
+
       subject: 'Your OTP Verification Code',
+
       html: `
         <div style="font-family:Arial;padding:20px;">
           <h2>Email Verification</h2>
@@ -237,14 +254,21 @@ app.post('/api/verify-and-send', async (req, res) => {
   otpStore.delete(key);
 
   try {
-     console.log("Creating SMTP...");
+    console.log('Creating SMTP...');
+
     const transporter = createTransporter();
-    await transporter.verify();
+
+    console.log('Sending contact message...');
+
     await transporter.sendMail({
       from: `"Portfolio Contact" <${MAIL_USER}>`,
+
       to: MAIL_USER,
+
       replyTo: email,
+
       subject: `Portfolio Message from ${name}`,
+
       html: `
         <div style="font-family:Arial;padding:20px;">
           <h2>New Portfolio Message</h2>
