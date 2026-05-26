@@ -1,0 +1,204 @@
+/* ─────────────────────────────────────────
+   GLOBAL DESIGN SYSTEM — Mounishver S Portfolio
+   Minimal, editorial, human-crafted palette
+   ───────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap');
+
+/* ── Design tokens ── */
+:root {
+  /* Core palette — minimal, intentional */
+  --color-bg:        #0b0b0e;
+  --color-bg-2:      #0f0f14;
+  --color-surface:   rgba(255,255,255,0.035);
+  --color-border:    rgba(255,255,255,0.07);
+  --color-text:      #dcdce8;
+  --color-muted:     rgba(255,255,255,0.38);
+
+  /* Single warm accent — draws attention without screaming */
+  --color-gold:      #c9a227;
+  --color-gold-dim:  rgba(201,162,39,0.15);
+  --color-gold-glow: rgba(201,162,39,0.25);
+
+  /* Cool secondary — used sparingly */
+  --color-slate:     #4f7cac;
+  --color-slate-dim: rgba(79,124,172,0.12);
+
+  /* Status */
+  --color-green:     #5dbf7e;
+
+  /* Legacy aliases so nothing breaks during migration */
+  --color-accent-1:  var(--color-slate);
+  --color-accent-2:  var(--color-gold);
+  --color-accent-3:  var(--color-gold);
+  --color-glow-1:    var(--color-gold-glow);
+  --color-glow-2:    rgba(79,124,172,0.15);
+
+  /* Fonts */
+  --font-display: 'Syne', sans-serif;
+  --font-body:    'Space Grotesk', sans-serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* Transitions */
+  --transition-fast:   0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  background: var(--color-bg);
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-text);
+  background: var(--color-bg);
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+#root { width: 100%; }
+
+/* ── Custom scrollbar — subtle ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(201,162,39,0.4);
+}
+
+/* ── Typography ── */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+a {
+  color: var(--color-gold);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+a:hover { color: #e5bb4a; }
+
+/* ── Global animations ── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px var(--color-gold-glow); }
+  50%       { box-shadow: 0 0 50px var(--color-gold-glow); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-50px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(50px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+@keyframes spider-drop {
+  0%   { transform: translateY(-120px); opacity: 0; }
+  60%  { opacity: 1; }
+  80%  { transform: translateY(0px); }
+  90%  { transform: translateY(-8px); }
+  100% { transform: translateY(0px); opacity: 1; }
+}
+
+@keyframes otp-in {
+  from { opacity: 0; transform: scale(0.94) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Utility classes ── */
+.gradient-text {
+  background: linear-gradient(135deg, #ffffff 30%, #c9a227 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glass {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-lg);
+}
+
+/* ── Section label — typographic marker, no // ── */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+  margin-bottom: 1rem;
+}
+
+.section-label::before {
+  content: '';
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  background: var(--color-gold);
+  opacity: 0.6;
+}

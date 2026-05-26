@@ -1,0 +1,302 @@
+/* ─────────────────────────────────────────
+   APP.CSS — Hero Section
+   ───────────────────────────────────────── */
+
+/* ── Hero wrapper ── */
+.hero-section {
+  position: relative;
+  width: 100%;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ── Parallax background ── */
+.background {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 110%;
+  object-fit: cover;
+  object-position: center;
+  will-change: transform;
+  transform-origin: center top;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Dark vignette ── */
+.hero-section::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, transparent 40%, rgba(11,11,14,0.75) 100%),
+    linear-gradient(to bottom, transparent 50%, rgba(11,11,14,0.97) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ── Cursor glow — warm gold, subtle ── */
+.light {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  transition: background 0.08s linear;
+}
+@media (hover: none) { .light { display: none; } }
+
+/* ── Hero card ── */
+.hero-card {
+  position: relative;
+  z-index: 5;
+  width: min(700px, 90vw);
+  min-height: clamp(240px, 40vw, 400px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1200px;
+}
+
+/* ── Glass panel ── */
+.hero-glass {
+  width: 100%;
+  height: 100%;
+  min-height: clamp(240px, 40vw, 400px);
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border-radius: 20px;
+  box-shadow:
+    0 0 0 1px rgba(201,162,39,0.1),
+    0 30px 60px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+  padding: clamp(20px, 5vw, 44px) clamp(18px, 5vw, 48px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  text-align: center;
+  transition: transform 0.1s ease, box-shadow 0.3s ease;
+  transform-style: preserve-3d;
+  will-change: transform;
+  overflow: hidden;
+}
+
+/* ── Grain texture ── */
+.hero-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Accent line — warm gold ── */
+.hero-glass::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,162,39,0.7), transparent);
+  border-radius: 99px;
+}
+
+/* ── Typing greeting ── */
+.hero-greeting {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: clamp(0.85rem, 2.2vw, 1rem);
+  color: rgba(201,162,39,0.85);
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-greeting .cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: var(--color-gold);
+  border-radius: 1px;
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+}
+
+/* ── Name ── */
+.hero-name {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.6rem, 4.5vw, 3rem);
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  opacity: 0;
+  animation: fadeUp 0.9s cubic-bezier(0.4,0,0.2,1) forwards;
+  animation-delay: 1.4s;
+  position: relative;
+  z-index: 1;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+/* ── Role ── */
+.hero-role {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(0.9rem, 2.2vw, 1.15rem);
+  color: rgba(255,255,255,0.52);
+  letter-spacing: 0.02em;
+  opacity: 0;
+  animation: fadeUp 0.9s cubic-bezier(0.4,0,0.2,1) forwards;
+  animation-delay: 1.8s;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-role span {
+  color: rgba(201,162,39,0.9);
+  font-weight: 600;
+}
+
+/* ── Tagline ── */
+.hero-tagline {
+  margin-top: 0.5rem;
+  font-size: clamp(0.78rem, 1.8vw, 0.9rem);
+  color: rgba(255,255,255,0.3);
+  font-family: 'IBM Plex Mono', monospace;
+  font-style: italic;
+  opacity: 0;
+  animation: fadeUp 0.9s cubic-bezier(0.4,0,0.2,1) forwards;
+  animation-delay: 2.2s;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── CTA buttons ── */
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  opacity: 0;
+  animation: fadeUp 0.9s cubic-bezier(0.4,0,0.2,1) forwards;
+  animation-delay: 2.5s;
+  position: relative;
+  z-index: 1;
+}
+
+.btn-primary-hero {
+  padding: 11px 28px;
+  background: var(--color-gold);
+  border: none;
+  border-radius: 8px;
+  color: #0b0b0e;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, opacity 0.2s ease;
+  box-shadow: 0 4px 20px rgba(201,162,39,0.3);
+}
+
+.btn-primary-hero:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 8px 32px rgba(201,162,39,0.45);
+}
+
+.btn-outline-hero {
+  padding: 11px 28px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.75);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), background 0.3s ease, border-color 0.3s;
+}
+
+.btn-outline-hero:hover {
+  transform: translateY(-3px) scale(1.03);
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.28);
+  color: #fff;
+}
+
+/* ── Scroll indicator ── */
+.scroll-indicator {
+  position: absolute;
+  bottom: clamp(16px, 4vw, 32px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 5;
+  opacity: 0;
+  animation: fadeUp 0.8s ease forwards;
+  animation-delay: 3s;
+  cursor: pointer;
+}
+
+.scroll-indicator span {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+}
+
+.scroll-arrow {
+  width: 18px;
+  height: 18px;
+  border-right: 1.5px solid rgba(201,162,39,0.5);
+  border-bottom: 1.5px solid rgba(201,162,39,0.5);
+  transform: rotate(45deg);
+  animation: bounce-arrow 1.6s ease-in-out infinite;
+}
+
+@keyframes bounce-arrow {
+  0%, 100% { transform: rotate(45deg) translateY(0); opacity: 0.5; }
+  50%       { transform: rotate(45deg) translateY(6px); opacity: 1; }
+}
+
+/* ── Tap hint (mobile) ── */
+.tap-hint {
+  position: absolute;
+  bottom: clamp(12px, 3vw, 24px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.3);
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.08em;
+  display: none;
+  z-index: 5;
+}
+@media (hover: none) { .tap-hint { display: block; } }
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  .hero-glass { padding: 28px 22px; }
+  .hero-actions { gap: 10px; }
+  .btn-primary-hero, .btn-outline-hero { padding: 10px 22px; font-size: 0.83rem; }
+}
