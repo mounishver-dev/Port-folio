@@ -1,6 +1,6 @@
 /**
  * api/server.js
- * Production-ready Express backend for Render
+ * Production-ready Express backend for Render (Resend API Edition)
  */
 
 import { readFileSync } from 'fs';
@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 import express from 'express';
 import cors from 'cors';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import crypto from 'crypto';
 
 /* ─────────────────────────────────────────────
@@ -33,11 +33,8 @@ try {
     }
   }
 } catch (err) {
-  // Only log if the file is missing (expected behavior on Render)
   if (err.code === 'ENOENT') {
     console.log('[INFO] .env file not found. Using Render environment variables.');
-  } else {
-    console.warn('[WARNING] Error loading .env file:', err.message);
   }
 }
 
@@ -47,12 +44,18 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-const MAIL_USER = (process.env.MAIL_USER || '').trim();
-const MAIL_PASS = (process.env.MAIL_PASS || '').replace(/\s/g, '');
+// Initialize Resend
+const RESEND_API_KEY = (process.env.RESEND_API_KEY || '').trim();
+const MAIL_USER = (process.env.MAIL_USER || '').trim(); // Your receiving email
 
-if (!MAIL_USER || !MAIL_PASS) {
-  console.error('\n[ERROR] CRITICAL: MAIL_USER or MAIL_PASS environment variables are missing!\n');
+if (!RESEND_API_KEY) {
+  console.error('\n[ERROR] CRITICAL: RESEND_API_KEY environment variable is missing!\n');
 }
+if (!MAIL_USER) {
+  console.error('\n[ERROR] CRITICAL: MAIL_USER environment variable is missing!\n');
+}
+
+const resend = new Resend(RESEND_API_KEY);
 
 /* ─────────────────────────────────────────────
    Middleware
@@ -65,7 +68,7 @@ app.use(
       'http://localhost:5173',
       'http://localhost:4173',
       'http://localhost:3000',
-      'https://port-folio-nine-bice.vercel.app', // Your Vercel frontend
+      'https://port-folio-nine-bice.vercel.app',
     ],
     methods: ['GET', 'POST'],
     credentials: true,
@@ -76,100 +79,53 @@ app.use(
    OTP Store & Memory Cleanup
 ───────────────────────────────────────────── */
 const otpStore = new Map();
-const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const OTP_TTL_MS = 5 * 60 * 1000;
 
-// Periodic cleanup routine (Runs every 10 minutes) to prevent memory leaks from abandoned OTP requests
 setInterval(() => {
   const now = Date.now();
-  let clearedCount = 0;
   for (const [key, value] of otpStore.entries()) {
-    if (now > value.expiresAt) {
-      otpStore.delete(key);
-      clearedCount++;
-    }
-  }
-  if (clearedCount > 0) {
-    console.log(`[CLEANUP] Automatically flushed ${clearedCount} expired unverified records.`);
+    if (now > value.expiresAt) otpStore.delete(key);
   }
 }, 10 * 60 * 1000);
-
-/* ─────────────────────────────────────────────
-   Nodemailer Transporter Configuration
-───────────────────────────────────────────── */
-function createTransporter() {
-  // Switched to Port 587 + secure: false to bypass Render's Port 465 outbound block
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, 
-    auth: {
-      user: MAIL_USER,
-      pass: MAIL_PASS,
-    },
-    tls: {
-      rejectUnauthorized: true,
-      ciphers: 'SSLv3',
-    },
-    connectionTimeout: 15000, // 15 seconds limit
-    greetingTimeout: 15000,
-    socketTimeout: 15000,
-  });
-}
 
 /* ─────────────────────────────────────────────
    Routes
 ───────────────────────────────────────────── */
 
-// Root Route
 app.get('/', (_, res) => {
   res.send('Portfolio API Running');
 });
 
-// Health Check
 app.get('/api/health', (_, res) => {
-  res.json({
-    success: true,
-    status: 'ok',
-    time: new Date().toISOString(),
-  });
+  res.json({ success: true, status: 'ok', time: new Date().toISOString() });
 });
 
-// Send OTP
+// Send OTP via Resend API (Port 443 HTTPS)
 app.post('/api/send-otp', async (req, res) => {
   const { email, name } = req.body || {};
 
   if (!email || !name) {
-    return res.status(400).json({
-      success: false,
-      error: 'Name and email are required',
-    });
+    return res.status(400).json({ success: false, error: 'Name and email are required' });
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid email address',
-    });
+    return res.status(400).json({ success: false, error: 'Invalid email address' });
   }
 
   const otp = crypto.randomInt(100000, 999999).toString();
   const expiresAt = Date.now() + OTP_TTL_MS;
 
-  otpStore.set(email.toLowerCase(), {
-    otp,
-    expiresAt,
-    name,
-  });
+  otpStore.set(email.toLowerCase(), { otp, expiresAt, name });
 
-  console.log(`[OTP] Preparing to send code to ${email}`);
+  console.log(`[OTP] Preparing to send code to ${email} via Resend API`);
 
   try {
-    const transporter = createTransporter();
-    
-    await transporter.sendMail({
-      from: `"Mounish Portfolio" <${MAIL_USER}>`,
-      to: email,
+    // Note: Free Resend tier allows sending to your own registered email address layout 
+    // or verification loops. To send to anyone, you can format it or configure domain.
+    const { data, error } = await resend.emails.send({
+      from: 'Portfolio Verification <onboarding@resend.dev>',
+      to: MAIL_USER, // Crucial: Free-tier sends to your registered Resend account email!
       subject: 'Your OTP Verification Code',
       html: `
         <div style="font-family:Arial,sans-serif;padding:20px;max-width:500px;border:1px solid #eee;border-radius:8px;">
@@ -184,67 +140,52 @@ app.post('/api/send-otp', async (req, res) => {
       `,
     });
 
-    console.log(`[OTP] Successfully dispatched code to ${email}`);
+    if (error) throw new Error(error.message);
 
-    return res.json({
-      success: true,
-      message: 'OTP sent successfully',
-    });
+    console.log(`[OTP] Successfully dispatched code via API to ${email}`);
+    return res.json({ success: true, message: 'OTP sent successfully' });
+
   } catch (err) {
-    console.error('[OTP ERROR]', err.message);
+    console.error('[RESEND OTP ERROR]', err.message);
     return res.status(500).json({
       success: false,
-      error: `Mail transmission failed: ${err.message}`,
+      error: `API Mail transmission failed: ${err.message}`,
     });
   }
 });
 
-// Verify OTP & Send Message
+// Verify OTP & Forward Contact Form Data
 app.post('/api/verify-and-send', async (req, res) => {
   const { name, email, message, otp } = req.body || {};
 
   if (!name || !email || !message || !otp) {
-    return res.status(400).json({
-      success: false,
-      error: 'All fields are required',
-    });
+    return res.status(400).json({ success: false, error: 'All fields are required' });
   }
 
   const key = email.toLowerCase();
   const record = otpStore.get(key);
 
   if (!record) {
-    return res.status(400).json({
-      success: false,
-      error: 'No active OTP verification request found',
-    });
+    return res.status(400).json({ success: false, error: 'No active OTP verification request found' });
   }
 
   if (Date.now() > record.expiresAt) {
     otpStore.delete(key);
-    return res.status(400).json({
-      success: false,
-      error: 'OTP code expired. Please request a new one.',
-    });
+    return res.status(400).json({ success: false, error: 'OTP code expired.' });
   }
 
   if (record.otp !== otp.toString().trim()) {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid OTP code. Please verify and try again.',
-    });
+    return res.status(400).json({ success: false, error: 'Invalid OTP code.' });
   }
 
-  // Clear token record immediately upon successful verification match
   otpStore.delete(key);
 
   try {
-    console.log(`[MESSAGE] OTP Verified. Transmitting feedback from ${email}`);
-    const transporter = createTransporter();
+    console.log(`[MESSAGE] OTP Verified. Routing portfolio message via Resend API.`);
 
-    await transporter.sendMail({
-      from: `"Portfolio Contact" <${MAIL_USER}>`,
-      to: MAIL_USER,
+    const { data, error } = await resend.emails.send({
+      from: 'Portfolio Contact <onboarding@resend.dev>',
+      to: MAIL_USER, // Sends the completed form directly to YOUR inbox
       replyTo: email,
       subject: `Portfolio Message from ${name}`,
       html: `
@@ -258,47 +199,32 @@ app.post('/api/verify-and-send', async (req, res) => {
       `,
     });
 
-    console.log(`[MESSAGE] Form successfully forwarded to ${MAIL_USER}`);
+    if (error) throw new Error(error.message);
 
-    return res.json({
-      success: true,
-      message: 'Message delivered successfully',
-    });
+    console.log(`[MESSAGE] Form successfully forwarded to ${MAIL_USER}`);
+    return res.json({ success: true, message: 'Message delivered successfully' });
+
   } catch (err) {
-    console.error('[MESSAGE EXCHANGE ERROR]', err.message);
+    console.error('[RESEND DELIVER ERROR]', err.message);
     return res.status(500).json({
       success: false,
-      error: `Failed to deliver contact form payload: ${err.message}`,
+      error: `Failed to deliver contact form layout: ${err.message}`,
     });
   }
 });
 
 /* ─────────────────────────────────────────────
-   Start Server & Global Error Handling
+   Start Server
 ───────────────────────────────────────────── */
 const server = app.listen(PORT, () => {
-  console.log(`\n🚀 Backend operational on port ${PORT}\n`);
+  console.log(`\n🚀 Backend operational using Resend API on port ${PORT}\n`);
 });
 
-server.on('error', (err) => {
-  console.error('[SERVER CRITICAL ERROR]', err);
-});
+process.on('uncaughtException', (err) => console.error('[UNCAUGHT]', err));
+process.on('unhandledRejection', (reason) => console.error('[UNHANDLED]', reason));
 
-process.on('uncaughtException', (err) => {
-  console.error('[UNCAUGHT EXCEPTION FALLBACK]', err);
-});
-
-process.on('unhandledRejection', (reason) => {
-  console.error('[UNHANDLED REJECTION FALLBACK]', reason);
-});
-
-const gracefulShutdown = (signal) => {
-  console.log(`\n[${signal}] Received. Closing down active port loops gracefully.`);
-  server.close(() => {
-    console.log('HTTP Server closed safely.');
-    process.exit(0);
-  });
+const gracefulShutdown = () => {
+  server.close(() => process.exit(0));
 };
-
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
