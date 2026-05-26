@@ -89,10 +89,15 @@ const OTP_TTL_MS = 5 * 60 * 1000;
 function createTransporter() {
   return nodemailer.createTransport({
     service: 'gmail',
+
     auth: {
       user: MAIL_USER,
       pass: MAIL_PASS,
     },
+
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
 }
 
@@ -149,6 +154,7 @@ app.post('/api/send-otp', async (req, res) => {
   console.log(`[OTP] Sending OTP to ${email}`);
 
   try {
+   console.log("Creating transporter...");
     const transporter = createTransporter();
 
     await transporter.sendMail({
@@ -231,8 +237,9 @@ app.post('/api/verify-and-send', async (req, res) => {
   otpStore.delete(key);
 
   try {
+     console.log("Creating SMTP...");
     const transporter = createTransporter();
-
+    await transporter.verify();
     await transporter.sendMail({
       from: `"Portfolio Contact" <${MAIL_USER}>`,
       to: MAIL_USER,
