@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import "./connect.css";
 import { IconMail, IconMapPin, IconStatus, IconSend, IconKey } from "./Icons";
+
 const API = import.meta.env.VITE_API_URL;
+
 const socials = [
   {
     name: 'GitHub',
@@ -25,18 +27,16 @@ const socials = [
   },
 ];
 
-// Step: 'idle' | 'sending_otp' | 'otp_sent' | 'verifying' | 'success' | 'error'
 export default function Connect() {
-  const [form,    setForm]    = useState({ name: '', email: '', message: '' });
-  const [otp,     setOtp]     = useState('');
-  const [step,    setStep]    = useState('idle');
-  const [errMsg,  setErrMsg]  = useState('');
+  const [form, setForm] = useState({ name: '', email: '', message: '' });
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState('idle');
+  const [errMsg, setErrMsg] = useState('');
   const [focused, setFocused] = useState(null);
   const sectionRef = useRef(null);
-  const cardRef    = useRef(null);
-  const otpRef     = useRef(null);
+  const cardRef = useRef(null);
+  const otpRef = useRef(null);
 
-  // Animate card in on scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -49,7 +49,6 @@ export default function Connect() {
     return () => observer.disconnect();
   }, []);
 
-  // Focus OTP input when modal appears
   useEffect(() => {
     if (step === 'otp_sent' && otpRef.current)
       setTimeout(() => otpRef.current?.focus(), 120);
@@ -66,10 +65,17 @@ export default function Connect() {
     setErrMsg('');
     try {
       const res = await fetch(`${API}/api/send-otp`, {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email: form.email, name: form.name }),
+        body: JSON.stringify({ email: form.email, name: form.name }),
       });
+
+      // Handle non-JSON server crash / timeout configurations cleanly
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(`Server returned non-JSON response (${res.status})`);
+      }
+
       const data = await res.json();
       if (data.success) {
         setStep('otp_sent');
@@ -77,8 +83,10 @@ export default function Connect() {
         setErrMsg(data.error || 'Could not send OTP. Please try again.');
         setStep('idle');
       }
-    } catch {
-      setErrMsg('Server is unreachable. Make sure the backend is running.');
+    } catch (err) {
+      setErrMsg(err.message.includes('Fetch') || err.message.includes('non-JSON')
+        ? 'Connection timed out or server unreachable. Check backend port status.'
+        : 'Failed to complete authentication request.');
       setStep('idle');
     }
   }
@@ -86,15 +94,29 @@ export default function Connect() {
   // Step 2 — verify OTP and send message
   async function handleVerify(e) {
     e.preventDefault();
-    if (otp.trim().length !== 6) { setErrMsg('Enter the 6-digit code sent to your email.'); return; }
+    if (otp.trim().length !== 6) { 
+      setErrMsg('Enter the 6-digit code sent to your email.'); 
+      return; 
+    }
     setStep('verifying');
     setErrMsg('');
     try {
       const res = await fetch(`${API}/api/verify-and-send`, {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ ...form, otp }),
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          message: form.message,
+          otp: otp.trim()
+        }),
       });
+
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(`Server timeout during handoff (${res.status})`);
+      }
+
       const data = await res.json();
       if (data.success) {
         setStep('success');
@@ -104,8 +126,10 @@ export default function Connect() {
         setErrMsg(data.error || 'Incorrect OTP. Please try again.');
         setStep('otp_sent');
       }
-    } catch {
-      setErrMsg('Server error. Please try again.');
+    } catch (err) {
+      setErrMsg(err.message.includes('JSON') 
+        ? 'The server timed out while transmitting your verification. Please verify your SMTP settings.'
+        : 'Server error connection dropped. Please try again.');
       setStep('otp_sent');
     }
   }
@@ -120,11 +144,9 @@ export default function Connect() {
 
   return (
     <section className="connect-section" id="connect" ref={sectionRef}>
-      {/* Orbs */}
       <div className="orb orb-1" />
       <div className="orb orb-2" />
 
-      {/* Header */}
       <div className="connect-header">
         <p className="section-label">Let's Connect</p>
         <h1 className="connect-main-title">Let's Build<br />Something Great</h1>
@@ -134,9 +156,7 @@ export default function Connect() {
         </p>
       </div>
 
-      {/* Card */}
       <div className="connect-card" ref={cardRef}>
-        {/* Left — contact info */}
         <div className="contact-info">
           <div className="info-block">
             <span className="info-icon-svg"><IconMail size={20} color="var(--color-gold)" /></span>
@@ -182,10 +202,8 @@ export default function Connect() {
           </div>
         </div>
 
-        {/* Divider */}
         <div className="connect-divider" />
 
-        {/* Right — form */}
         {step === 'success' ? (
           <div className="success-state">
             <div className="success-icon-wrap">
@@ -203,12 +221,11 @@ export default function Connect() {
           </div>
         ) : (
           <form className="contact-form" onSubmit={step === 'otp_sent' ? handleVerify : handleRequestOtp}>
-            {/* Name + Email — hide during OTP step */}
             {step !== 'otp_sent' && step !== 'verifying' && (
               <>
                 {[
-                  { name: 'name',    type: 'text',  placeholder: 'Your Name'    },
-                  { name: 'email',   type: 'email', placeholder: 'Your Email'   },
+                  { name: 'name', type: 'text', placeholder: 'Your Name' },
+                  { name: 'email', type: 'email', placeholder: 'Your Email' },
                 ].map(field => (
                   <div
                     key={field.name}
@@ -244,7 +261,6 @@ export default function Connect() {
               </>
             )}
 
-            {/* OTP step */}
             {(step === 'otp_sent' || step === 'verifying') && (
               <div className="otp-box">
                 <div className="otp-box-header">
@@ -278,7 +294,6 @@ export default function Connect() {
               </div>
             )}
 
-            {/* Error */}
             {errMsg && <p className="form-error">{errMsg}</p>}
 
             <button
