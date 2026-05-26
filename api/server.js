@@ -16,49 +16,42 @@ import crypto from 'crypto';
 ───────────────────────────────────────────── */
 try {
   const __dir = dirname(fileURLToPath(import.meta.url));
-
-  const envStr = readFileSync(
-    resolve(__dir, '../.env'),
-    'utf8'
-  );
+  const envStr = readFileSync(resolve(__dir, '../.env'), 'utf8');
 
   for (const line of envStr.split('\n')) {
     const trimmed = line.trim();
-
     if (!trimmed || trimmed.startsWith('#')) continue;
 
     const eqIdx = trimmed.indexOf('=');
-
     if (eqIdx < 0) continue;
 
     const key = trimmed.slice(0, eqIdx).trim();
-
     const val = trimmed.slice(eqIdx + 1).trim();
 
     if (key && !(key in process.env)) {
       process.env[key] = val;
     }
   }
-} catch {
-  console.log('[INFO] Using Render environment variables');
+} catch (err) {
+  // Only log if the file is missing (expected behavior on Render)
+  if (err.code === 'ENOENT') {
+    console.log('[INFO] .env file not found. Using Render environment variables.');
+  } else {
+    console.warn('[WARNING] Error loading .env file:', err.message);
+  }
 }
 
 /* ─────────────────────────────────────────────
-   App Setup
+   App Setup & Validation
 ───────────────────────────────────────────── */
 const app = express();
-
 const PORT = process.env.PORT || 3001;
 
 const MAIL_USER = (process.env.MAIL_USER || '').trim();
-
 const MAIL_PASS = (process.env.MAIL_PASS || '').replace(/\s/g, '');
 
-/* ─────────────────────────────────────────────
-   Validation
-───────────────────────────────────────────── */
 if (!MAIL_USER || !MAIL_PASS) {
-  console.error('\n[ERROR] MAIL_USER or MAIL_PASS missing\n');
+  console.error('\n[ERROR] CRITICAL: MAIL_USER or MAIL_PASS environment variables are missing!\n');
 }
 
 /* ─────────────────────────────────────────────
@@ -72,56 +65,67 @@ app.use(
       'http://localhost:5173',
       'http://localhost:4173',
       'http://localhost:3000',
-
-      // Your Vercel frontend
-      'https://port-folio-nine-bice.vercel.app',
+      'https://port-folio-nine-bice.vercel.app', // Your Vercel frontend
     ],
-
     methods: ['GET', 'POST'],
-
     credentials: true,
   })
 );
 
 /* ─────────────────────────────────────────────
-   OTP Store
+   OTP Store & Memory Cleanup
 ───────────────────────────────────────────── */
 const otpStore = new Map();
+const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-const OTP_TTL_MS = 5 * 60 * 1000;
+// Periodic cleanup routine (Runs every 10 minutes) to prevent memory leaks from abandoned OTP requests
+setInterval(() => {
+  const now = Date.now();
+  let clearedCount = 0;
+  for (const [key, value] of otpStore.entries()) {
+    if (now > value.expiresAt) {
+      otpStore.delete(key);
+      clearedCount++;
+    }
+  }
+  if (clearedCount > 0) {
+    console.log(`[CLEANUP] Automatically flushed ${clearedCount} expired unverified records.`);
+  }
+}, 10 * 60 * 1000);
 
 /* ─────────────────────────────────────────────
-   Nodemailer Transporter
+   Nodemailer Transporter Configuration
 ───────────────────────────────────────────── */
 function createTransporter() {
+  // Switched to Port 587 + secure: false to bypass Render's Port 465 outbound block
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
-
-    port: 465,
-
-    secure: true,
-
+    port: 587,
+    secure: false, 
     auth: {
       user: MAIL_USER,
       pass: MAIL_PASS,
     },
-
-    connectionTimeout: 30000,
-    greetingTimeout: 30000,
-    socketTimeout: 30000,
+    tls: {
+      rejectUnauthorized: true,
+      ciphers: 'SSLv3',
+    },
+    connectionTimeout: 15000, // 15 seconds limit
+    greetingTimeout: 15000,
+    socketTimeout: 15000,
   });
 }
 
 /* ─────────────────────────────────────────────
-   Root Route
+   Routes
 ───────────────────────────────────────────── */
+
+// Root Route
 app.get('/', (_, res) => {
   res.send('Portfolio API Running');
 });
 
-/* ─────────────────────────────────────────────
-   Health Check
-───────────────────────────────────────────── */
+// Health Check
 app.get('/api/health', (_, res) => {
   res.json({
     success: true,
@@ -130,9 +134,7 @@ app.get('/api/health', (_, res) => {
   });
 });
 
-/* ─────────────────────────────────────────────
-   Send OTP
-───────────────────────────────────────────── */
+// Send OTP
 app.post('/api/send-otp', async (req, res) => {
   const { email, name } = req.body || {};
 
@@ -144,7 +146,6 @@ app.post('/api/send-otp', async (req, res) => {
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
   if (!emailRegex.test(email)) {
     return res.status(400).json({
       success: false,
@@ -153,7 +154,6 @@ app.post('/api/send-otp', async (req, res) => {
   }
 
   const otp = crypto.randomInt(100000, 999999).toString();
-
   const expiresAt = Date.now() + OTP_TTL_MS;
 
   otpStore.set(email.toLowerCase(), {
@@ -162,40 +162,29 @@ app.post('/api/send-otp', async (req, res) => {
     name,
   });
 
-  console.log(`[OTP] Sending OTP to ${email}`);
+  console.log(`[OTP] Preparing to send code to ${email}`);
 
   try {
-    console.log('Creating transporter...');
-
     const transporter = createTransporter();
-
-    console.log('Sending OTP email...');
-
+    
     await transporter.sendMail({
       from: `"Mounish Portfolio" <${MAIL_USER}>`,
-
       to: email,
-
       subject: 'Your OTP Verification Code',
-
       html: `
-        <div style="font-family:Arial;padding:20px;">
-          <h2>Email Verification</h2>
-
+        <div style="font-family:Arial,sans-serif;padding:20px;max-width:500px;border:1px solid #eee;border-radius:8px;">
+          <h2 style="color:#333;">Email Verification</h2>
           <p>Hello <strong>${name}</strong>,</p>
-
-          <p>Your OTP code is:</p>
-
-          <h1 style="letter-spacing:5px;color:#c9a227;">
+          <p>Your OTP verification code for contacting Mounishver is:</p>
+          <h1 style="letter-spacing:5px;color:#c9a227;background:#f9f9f9;padding:10px;text-align:center;border-radius:4px;">
             ${otp}
           </h1>
-
-          <p>This code expires in 5 minutes.</p>
+          <p style="color:#666;font-size:12px;">This code is strictly valid for 5 minutes.</p>
         </div>
       `,
     });
 
-    console.log(`[OTP] OTP sent to ${email}`);
+    console.log(`[OTP] Successfully dispatched code to ${email}`);
 
     return res.json({
       success: true,
@@ -203,17 +192,14 @@ app.post('/api/send-otp', async (req, res) => {
     });
   } catch (err) {
     console.error('[OTP ERROR]', err.message);
-
     return res.status(500).json({
       success: false,
-      error: err.message,
+      error: `Mail transmission failed: ${err.message}`,
     });
   }
 });
 
-/* ─────────────────────────────────────────────
-   Verify OTP & Send Message
-───────────────────────────────────────────── */
+// Verify OTP & Send Message
 app.post('/api/verify-and-send', async (req, res) => {
   const { name, email, message, otp } = req.body || {};
 
@@ -225,109 +211,94 @@ app.post('/api/verify-and-send', async (req, res) => {
   }
 
   const key = email.toLowerCase();
-
   const record = otpStore.get(key);
 
   if (!record) {
     return res.status(400).json({
       success: false,
-      error: 'No OTP found',
+      error: 'No active OTP verification request found',
     });
   }
 
   if (Date.now() > record.expiresAt) {
     otpStore.delete(key);
-
     return res.status(400).json({
       success: false,
-      error: 'OTP expired',
+      error: 'OTP code expired. Please request a new one.',
     });
   }
 
   if (record.otp !== otp.toString().trim()) {
     return res.status(400).json({
       success: false,
-      error: 'Invalid OTP',
+      error: 'Invalid OTP code. Please verify and try again.',
     });
   }
 
+  // Clear token record immediately upon successful verification match
   otpStore.delete(key);
 
   try {
-    console.log('Creating SMTP...');
-
+    console.log(`[MESSAGE] OTP Verified. Transmitting feedback from ${email}`);
     const transporter = createTransporter();
-
-    console.log('Sending contact message...');
 
     await transporter.sendMail({
       from: `"Portfolio Contact" <${MAIL_USER}>`,
-
       to: MAIL_USER,
-
       replyTo: email,
-
       subject: `Portfolio Message from ${name}`,
-
       html: `
-        <div style="font-family:Arial;padding:20px;">
-          <h2>New Portfolio Message</h2>
-
-          <p><strong>Name:</strong> ${name}</p>
-
-          <p><strong>Email:</strong> ${email}</p>
-
-          <hr />
-
-          <p>${message.replace(/\n/g, '<br>')}</p>
+        <div style="font-family:Arial,sans-serif;padding:20px;line-height:1.6;">
+          <h2 style="color:#0056b3;border-bottom:1px solid #eee;padding-bottom:10px;">New Portfolio Message</h2>
+          <p><strong>Sender Name:</strong> ${name}</p>
+          <p><strong>Sender Email:</strong> ${email}</p>
+          <hr style="border:none;border-top:1px solid #eee;margin:20px 0;" />
+          <div style="background:#f5f5f5;padding:15px;border-radius:4px;white-space:pre-wrap;">${message.replace(/\n/g, '<br>')}</div>
         </div>
       `,
     });
 
-    console.log(`[MESSAGE] Message received from ${email}`);
+    console.log(`[MESSAGE] Form successfully forwarded to ${MAIL_USER}`);
 
     return res.json({
       success: true,
-      message: 'Message sent successfully',
+      message: 'Message delivered successfully',
     });
   } catch (err) {
-    console.error('[MESSAGE ERROR]', err.message);
-
+    console.error('[MESSAGE EXCHANGE ERROR]', err.message);
     return res.status(500).json({
       success: false,
-      error: err.message,
+      error: `Failed to deliver contact form payload: ${err.message}`,
     });
   }
 });
 
 /* ─────────────────────────────────────────────
-   Start Server
+   Start Server & Global Error Handling
 ───────────────────────────────────────────── */
 const server = app.listen(PORT, () => {
-  console.log(`\nServer running on port ${PORT}\n`);
+  console.log(`\n🚀 Backend operational on port ${PORT}\n`);
 });
 
-/* ─────────────────────────────────────────────
-   Error Handling
-───────────────────────────────────────────── */
 server.on('error', (err) => {
-  console.error('[SERVER ERROR]', err);
+  console.error('[SERVER CRITICAL ERROR]', err);
 });
 
 process.on('uncaughtException', (err) => {
-  console.error('[UNCAUGHT EXCEPTION]', err);
+  console.error('[UNCAUGHT EXCEPTION FALLBACK]', err);
 });
 
 process.on('unhandledRejection', (reason) => {
-  console.error('[UNHANDLED REJECTION]', reason);
+  console.error('[UNHANDLED REJECTION FALLBACK]', reason);
 });
 
-process.on('SIGINT', () => {
-  console.log('\nStopping server...');
-  process.exit(0);
-});
+const gracefulShutdown = (signal) => {
+  console.log(`\n[${signal}] Received. Closing down active port loops gracefully.`);
+  server.close(() => {
+    console.log('HTTP Server closed safely.');
+    process.exit(0);
+  });
+};
 
-process.on('SIGTERM', () => {
-  console.log('\nStopping server...');
-  process.exit(0);
-});
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
