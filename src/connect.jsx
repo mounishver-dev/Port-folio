@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import "./connect.css";
 import { IconMail, IconMapPin, IconStatus, IconSend, IconKey } from "./Icons";
-
+const API = import.meta.env.VITE_API_URL;
 const socials = [
   {
     name: 'GitHub',
@@ -65,7 +65,7 @@ export default function Connect() {
     setStep('sending_otp');
     setErrMsg('');
     try {
-      const res  = await fetch('/api/send-otp', {
+      const res = await fetch(`${API}/api/send-otp`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ email: form.email, name: form.name }),
@@ -90,7 +90,7 @@ export default function Connect() {
     setStep('verifying');
     setErrMsg('');
     try {
-      const res  = await fetch('/api/verify-and-send', {
+      const res = await fetch(`${API}/api/verify-and-send`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ ...form, otp }),
