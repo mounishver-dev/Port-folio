@@ -69,7 +69,7 @@ app.use(
       'http://localhost:3000',
 
       // Replace with your Vercel frontend URL
-      'https://your-portfolio.vercel.app',
+      'https://port-folio-nine-bice.vercel.app/',
     ],
     methods: ['GET', 'POST'],
     credentials: true,
