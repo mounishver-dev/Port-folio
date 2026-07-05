@@ -13,6 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^2.0.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.0",
     "@react-three/postprocessing": "^3.0.4",
@@ -27,6 +28,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^6.30.4",
+    "resend": "^4.1.2",
     "three": "^0.181.1"
   },
   "devDependencies": {
