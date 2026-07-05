@@ -43,8 +43,8 @@ export default function Home() {
   const navigate = useNavigate();
 
   const { displayed: greeting, done: greetingDone } = useTypingEffect('Hi there, welcome', 70, 500);
-  const { displayed: nameTyped } = useTypingEffect(
-    greetingDone ? "I'm Mounishver S" : '',
+ const { displayed: nameTyped } = useTypingEffect(
+    greetingDone ? "I'm Mounishver\u00A0S" : '',
     65,
     greetingDone ? 200 : 99999
   );
