@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import './grap.css'
 import ModelScene from './ModelScene.jsx'
+import { designTools } from './data/portfolioData';
 
 function Grap() {
   const sectionRef = useRef(null);
@@ -37,7 +38,7 @@ function Grap() {
       <div className="content-column" ref={textRef}>
         <p className="section-label">My craft</p>
         <h2>And Also a</h2>
-        <h1>Graphical Designer</h1>
+        <h1 className="heading-gradient">Graphical Designer</h1>
 
         <div className="content">
           <p>
@@ -50,7 +51,7 @@ function Grap() {
         </div>
 
         <div className="design-tools">
-          {['Figma', 'Photoshop', 'Illustrator', 'After Effects', 'Blender'].map((tool, i) => (
+          {designTools.map((tool, i) => (
             <span key={tool} className="tool-badge" style={{ animationDelay: `${i * 0.1}s` }}>
               {tool}
             </span>

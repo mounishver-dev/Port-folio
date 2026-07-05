@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import './webdev.css'
 import SpiderScene from './SpiderScene'
-
-const skills = ['React', 'Vite', 'Three.js', 'Node.js', 'CSS', 'GSAP', 'REST APIs', 'Git'];
+import { webdevTools } from './data/portfolioData';
 
 function Webdev() {
   const sectionRef   = useRef(null);
@@ -59,7 +58,7 @@ function Webdev() {
       <div className="webdev-text" ref={textRef}>
         <p className="section-label">What I do</p>
         <h2>I'm a</h2>
-        <h1>Web Developer</h1>
+        <h1 className="heading-gradient">Web Developer</h1>
 
         <div className="webdevsub" ref={cardRef}>
           <p>
@@ -72,7 +71,7 @@ function Webdev() {
 
         {/* Skills chips */}
         <div className="skills-chips">
-          {skills.map((s, i) => (
+          {webdevTools.map((s, i) => (
             <span key={s} className="chip" style={{ animationDelay: `${i * 0.08}s` }}>
               {s}
             </span>

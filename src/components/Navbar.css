@@ -1,0 +1,285 @@
+/* ─────────────────────────────────────────
+   NAVBAR — Glassmorphism UI
+   ───────────────────────────────────────── */
+
+.navbar {
+  position: fixed;
+  top: 16px; /* Floating gap from the top */
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px); /* Maintain side margins on mobile */
+  max-width: 1200px;
+  z-index: 100;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 0 clamp(16px, 4vw, 32px);
+  
+  /* Core Dark Theme Glassmorphism */
+  background: rgba(12, 12, 18, 0.45);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 100px; /* Pill shape */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.navbar.scrolled {
+  /* Slightly more opaque when scrolling over content */
+  background: rgba(12, 12, 18, 0.75);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ══════════════════════════════════════════════════
+   LIGHT THEME GLASSMORPHISM — Refined & Frosted
+   ══════════════════════════════════════════════════ */
+[data-theme="light"] .navbar {
+  /* High transparency to let the blur do the work */
+  background: rgba(255, 255, 255, 0.35); 
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  /* Very soft dark shadow to lift it off the light page */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="light"] .navbar.scrolled {
+  background: rgba(255, 255, 255, 0.65);
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* ── Layout ── */
+.navbar-inner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ── Logo ── */
+.nav-logo {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-decoration: none;
+  letter-spacing: 0.05em;
+  transition: color var(--transition-fast);
+}
+
+.nav-logo:hover {
+  color: var(--accent);
+}
+
+/* ── Desktop links ── */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+}
+
+.nav-link {
+  padding: 8px 16px;
+  border-radius: 99px; /* Matches the pill shape */
+  font-family: var(--font-body);
+  font-size: 0.87rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-link.active {
+  color: var(--accent-light);
+  background: var(--accent-dim);
+}
+
+[data-theme="light"] .nav-link:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .nav-link.active {
+  color: var(--accent);
+}
+
+/* ── Theme toggle button ── */
+.theme-toggle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%; /* Circle looks better on glass */
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-left: 8px;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent-light);
+  border-color: var(--accent-dim);
+  transform: rotate(15deg) scale(1.05);
+}
+
+[data-theme="light"] .theme-toggle {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .theme-toggle:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* ── Scroll progress bar ── */
+.scroll-progress {
+  position: absolute;
+  bottom: -1px; /* Hugs the bottom border */
+  left: 20px; /* Inside the border radius */
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--cyan));
+  border-radius: 2px;
+  transition: width 0.08s linear;
+  pointer-events: none;
+  max-width: calc(100% - 40px);
+}
+
+/* ── Mobile controls ── */
+.nav-mobile-controls {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.hamburger {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+[data-theme="light"] .hamburger {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.hamburger span {
+  display: block;
+  width: 16px;
+  height: 1.5px;
+  background: var(--text-secondary);
+  border-radius: 2px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  transform-origin: center;
+}
+
+.hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+/* ── Mobile drawer (Floating Glass Panel) ── */
+.mobile-drawer {
+  position: fixed;
+  top: 86px; /* Sits just below the floating navbar */
+  right: 16px;
+  width: 220px;
+  
+  /* Dark Glassmorphism */
+  background: rgba(12, 12, 18, 0.65);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+              
+  padding: 16px 12px;
+  z-index: 99;
+  transform: translateY(-10px) scale(0.95);
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+  pointer-events: none;
+}
+
+/* Light Theme Mobile Drawer */
+[data-theme="light"] .mobile-drawer {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.mobile-drawer.open {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  pointer-events: all;
+}
+
+.mobile-drawer ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mobile-drawer ul a {
+  display: block;
+  padding: 12px 18px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: 12px;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.mobile-drawer ul a:hover,
+.mobile-drawer ul a.active {
+  color: var(--accent-light);
+  background: var(--accent-dim);
+}
+
+[data-theme="light"] .mobile-drawer ul a:hover,
+[data-theme="light"] .mobile-drawer ul a.active {
+  color: var(--accent);
+}
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 98;
+  background: rgba(0, 0, 0, 0.35); /* Focuses attention on the drawer */
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+[data-theme="light"] .drawer-backdrop {
+  background: rgba(0, 0, 0, 0.05); /* Softer dim for light mode */
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .nav-links { display: none; }
+  .nav-mobile-controls { display: flex; }
+}

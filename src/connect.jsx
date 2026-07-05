@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import "./connect.css";
 import { IconMail, IconMapPin, IconStatus, IconSend, IconKey } from "./Icons";
 
+const API = import.meta.env.VITE_API_URL || '';
+
 const socials = [
   {
     name: 'GitHub',
@@ -65,7 +67,7 @@ export default function Connect() {
     setStep('sending_otp');
     setErrMsg('');
     try {
-      const res  = await fetch('/api/send-otp', {
+      const res = await fetch(`${API}/api/send-otp`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ email: form.email, name: form.name }),
@@ -90,7 +92,7 @@ export default function Connect() {
     setStep('verifying');
     setErrMsg('');
     try {
-      const res  = await fetch('/api/verify-and-send', {
+      const res = await fetch(`${API}/api/verify-and-send`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ ...form, otp }),
@@ -127,7 +129,7 @@ export default function Connect() {
       {/* Header */}
       <div className="connect-header">
         <p className="section-label">Let's Connect</p>
-        <h1 className="connect-main-title">Let's Build<br />Something Great</h1>
+        <h1 className="connect-main-title heading-gradient">Let's Build<br />Something Great</h1>
         <p className="connect-intro">
           Available for freelance, full-time, or creative collaborations.
           Drop a message — I respond within 24 hours.
